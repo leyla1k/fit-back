@@ -1,0 +1,48 @@
+name: Deployment-backend
+
+concurrency:
+  group: production-backend
+  cancel-in-progress: true
+
+on:
+  push:
+    branches:
+      - backend
+
+env:
+  DOCKER_TAG_LATEST: ${{ secrets.DOCKER_TAG_LATEST }}
+  DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+  DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+  ID_RSA: ${{ secrets.ID_RSA }}
+  SERVER_USERNAME: ${{ secrets.SERVER_USERNAME }}
+  SERVER_IP: ${{ secrets.SERVER_IP }}
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: publish
+        uses: actions/checkout@v4
+      - run: cd apps/api && docker build -t $DOCKER_TAG_LATEST .
+      - run: docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD
+      - run: docker push $DOCKER_TAG_LATEST
+  deployment:
+    needs: [publish]
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Install SSH Key
+        uses: shimataro/ssh-key-action@v2
+        with:
+          key: ${{ secrets.ID_RSA }}
+          known_hosts: "any"
+      - name: Adding Known Hosts
+        run: ssh-keyscan -H ${{ secrets.SERVER_IP }} >> ~/.ssh/known_hosts
+      - name: deploy
+        uses: actions/checkout@v4
+      - run: ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no $SERVER_USERNAME@$SERVER_IP "docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD"
+      - run: ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no $SERVER_USERNAME@$SERVER_IP "docker pull $DOCKER_TAG_LATEST"
+      - run: ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no $SERVER_USERNAME@$SERVER_IP "docker-compose stop || true"
+      - run: ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no $SERVER_USERNAME@$SERVER_IP "docker-compose up -d"
+      - run: rm -f ~/.ssh/id_rsa
+      - run: echo "This job's status is ${{ job.status }}."

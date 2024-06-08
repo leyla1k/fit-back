@@ -1,0 +1,552 @@
+basePath: /
+definitions:
+  domain.Training:
+    properties:
+      end_time:
+        example: "2024-06-08T16:04:05Z"
+        type: string
+      id:
+        type: integer
+      level:
+        type: string
+      name:
+        type: string
+      start_time:
+        example: "2024-06-08T15:04:05Z"
+        type: string
+      trainer_id:
+        type: integer
+      type:
+        type: string
+      users:
+        items:
+          type: integer
+        type: array
+    type: object
+  domain.User:
+    properties:
+      health_description:
+        type: string
+      id:
+        type: integer
+      mail:
+        type: string
+      name:
+        type: string
+      password:
+        type: string
+      phone:
+        type: string
+      trainings:
+        items:
+          type: integer
+        type: array
+    type: object
+  handler.ResponseError:
+    properties:
+      error:
+        type: string
+    type: object
+  handler.ResponseSuccess:
+    properties:
+      data: {}
+      message:
+        type: string
+    type: object
+host: 158.160.62.249:8000
+info:
+  contact:
+    email: support@swagger.io
+    name: API Support
+    url: http://www.swagger.io/support
+  description: This is a fitness app server.
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  termsOfService: http://swagger.io/terms/
+  title: Fitness App API
+  version: "1.0"
+paths:
+  /login/{user_type}:
+    post:
+      consumes:
+      - application/json
+      description: Login a user or trainer based on user_type
+      parameters:
+      - description: User Type (user or trainer)
+        in: path
+        name: user_type
+        required: true
+        type: string
+      - description: User credentials
+        in: body
+        name: credentials
+        required: true
+        schema:
+          $ref: '#/definitions/domain.User'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: token
+          schema:
+            allOf:
+            - $ref: '#/definitions/handler.ResponseSuccess'
+            - properties:
+                data:
+                  type: string
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.ResponseError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handler.ResponseError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handler.ResponseError'
+      summary: Login a user or trainer
+      tags:
+      - auth
+  /protected/profile:
+    get:
+      description: Get the profile of the currently authenticated user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/handler.ResponseSuccess'
+            - properties:
+                data:
+                  $ref: '#/definitions/domain.User'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handler.ResponseError'
+      security:
+      - BearerAuth: []
+      summary: Get user profile
+      tags:
+      - user
+  /protected/trainer/schedule:
+    get:
+      description: Get the schedule for the current trainer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/handler.ResponseSuccess'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/domain.Training'
+                  type: array
+              type: object
+      security:
+      - BearerAuth: []
+      summary: Get the schedule for the current trainer
+      tags:
+      - trainer
+  /protected/training:
+    post:
+      consumes:
+      - application/json
+      description: Create a new training session (only for trainers)
+      parameters:
+      - description: Training data
+        in: body
+        name: training
+        required: true
+        schema:
+          $ref: '#/definitions/domain.Training'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            allOf:
+            - $ref: '#/definitions/handler.ResponseSuccess'
+            - properties:
+                data:
+                  $ref: '#/definitions/domain.Training'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.ResponseError'
+      security:
+      - BearerAuth: []
+      summary: Create a new training session
+      tags:
+      - training
+  /protected/training/{id}:
+    delete:
+      description: Delete a training session by ID (only for trainers)
+      parameters:
+      - description: Training ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.ResponseSuccess'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.ResponseError'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/handler.ResponseError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handler.ResponseError'
+      security:
+      - BearerAuth: []
+      summary: Delete a training session by ID
+      tags:
+      - training
+    get:
+      description: Get a training session by ID
+      parameters:
+      - description: Training ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/handler.ResponseSuccess'
+            - properties:
+                data:
+                  $ref: '#/definitions/domain.Training'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.ResponseError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handler.ResponseError'
+      security:
+      - BearerAuth: []
+      summary: Get a training session by ID
+      tags:
+      - training
+    put:
+      consumes:
+      - application/json
+      description: Update a training session by ID (only for trainers)
+      parameters:
+      - description: Training ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Updated training data
+        in: body
+        name: training
+        required: true
+        schema:
+          $ref: '#/definitions/domain.Training'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/handler.ResponseSuccess'
+            - properties:
+                data:
+                  $ref: '#/definitions/domain.Training'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.ResponseError'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/handler.ResponseError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handler.ResponseError'
+      security:
+      - BearerAuth: []
+      summary: Update a training session by ID
+      tags:
+      - training
+  /protected/training/{training_id}/register:
+    post:
+      consumes:
+      - application/json
+      description: Register a user for a specific training session
+      parameters:
+      - description: Training ID
+        in: path
+        name: training_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.ResponseSuccess'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.ResponseError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handler.ResponseError'
+      security:
+      - BearerAuth: []
+      summary: Register a user for a training session
+      tags:
+      - training
+  /protected/training/{training_id}/users:
+    get:
+      description: Get all users by training ID
+      parameters:
+      - description: Training ID
+        in: path
+        name: training_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/handler.ResponseSuccess'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/domain.User'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.ResponseError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handler.ResponseError'
+      security:
+      - BearerAuth: []
+      summary: Get all users by training ID
+      tags:
+      - training
+  /protected/user/{id}:
+    delete:
+      description: Delete a user or trainer profile by ID
+      parameters:
+      - description: User or Trainer ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.ResponseSuccess'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.ResponseError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handler.ResponseError'
+      security:
+      - BearerAuth: []
+      summary: Delete a user or trainer profile by ID
+      tags:
+      - user
+    get:
+      description: Get a user or trainer profile by ID
+      parameters:
+      - description: User or Trainer ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/handler.ResponseSuccess'
+            - properties:
+                data:
+                  $ref: '#/definitions/domain.User'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.ResponseError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handler.ResponseError'
+      security:
+      - BearerAuth: []
+      summary: Get a user or trainer profile by ID
+      tags:
+      - user
+    put:
+      consumes:
+      - application/json
+      description: Update a user or trainer profile by ID
+      parameters:
+      - description: User or Trainer ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Updated user data
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/domain.User'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/handler.ResponseSuccess'
+            - properties:
+                data:
+                  $ref: '#/definitions/domain.User'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.ResponseError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handler.ResponseError'
+      security:
+      - BearerAuth: []
+      summary: Update a user or trainer profile by ID
+      tags:
+      - user
+  /protected/user/schedule:
+    get:
+      description: Get the schedule for the current user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/handler.ResponseSuccess'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/domain.Training'
+                  type: array
+              type: object
+      security:
+      - BearerAuth: []
+      summary: Get the schedule for the current user
+      tags:
+      - user
+  /register/{user_type}:
+    post:
+      consumes:
+      - application/json
+      description: Register a new user or trainer based on user_type
+      parameters:
+      - description: User Type (user or trainer)
+        in: path
+        name: user_type
+        required: true
+        type: string
+      - description: User data
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/domain.User'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/handler.ResponseSuccess'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.ResponseError'
+      summary: Register a new user or trainer
+      tags:
+      - auth
+  /trainings:
+    get:
+      description: Get all available trainings
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/handler.ResponseSuccess'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/domain.Training'
+                  type: array
+              type: object
+      summary: Get all available trainings
+      tags:
+      - training
+securityDefinitions:
+  BearerAuth:
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"
